@@ -1,6 +1,5 @@
 import { createSignal, createEffect, onMount, onCleanup } from "solid-js";
-import { BusTui } from "./bus-tui";
-import type { BusCallback } from "./types";
+import { BusTui } from "./bus-tui.js";
 
 /**
  * Reactive bus subscription for TUI plugins.
@@ -53,9 +52,12 @@ export function useServiceBus(
     const unsub = b
       .forService(service)
       .forSession(sid)
-      .subscribe(channel, ((envelope: { payload: unknown }) => {
+      .subscribe(channel, (envelope) => {
         onMessage(envelope.payload);
-      }) as BusCallback);
+      });
+
+    // Publish ping so the worker knows our session ID (continue mode fix)
+    b.forService(service).forSession(sid).publish("ping", { ts: Date.now() });
 
     onCleanup(() => unsub?.());
   });

@@ -23,6 +23,7 @@ const tuiResult = await build({
   format: "esm",
   minify: true,
   sourcemap: "external",
+  external: ["solid-js", "@opentui/solid"],
 });
 if (!tuiResult.success) {
   console.error("TUI build failed:", tuiResult.logs);
