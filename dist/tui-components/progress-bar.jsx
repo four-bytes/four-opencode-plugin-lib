@@ -21,7 +21,7 @@ export function ProgressBar(props) {
     const showLabel = createMemo(() => props.showLabel !== false);
     const rightAlign = createMemo(() => props.rightAlign === true);
     const justify = createMemo(() => (rightAlign() ? "flex-end" : "flex-start"));
-    return (<box flexDirection="row" width="100%" justifyContent={justify()}>
+    return (<box flexDirection="row" width={props.width ?? "100%"} justifyContent={justify()}>
       {showLabel() && <text>{`${formatNum(props.current)}/${formatNum(props.total)} `}</text>}
       <box flexDirection="row" justifyContent={justify()}>
         {Array.from(text()).map((char, i) => (<box backgroundColor={i < filledCount() ? fillBg() : unfillBg()}>

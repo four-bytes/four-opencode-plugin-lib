@@ -3,12 +3,9 @@
  *
  * These tests start the real Go bus binary and test the full HTTP+WebSocket path.
  *
- * NOTE: The MemoryBus fallback (in-memory EventBus) is tested IMPLICITLY
- * whenever BusClient.connect() or BusTui.connect() is called without the
- * Go binary available. Both connect() methods log a warning and transparently
- * fall back to MemoryBusClient / MemoryBusTui. There is no dedicated test
- * file — the fallback is exercised by any plugin code that runs without the
- * bus binary in PATH.
+ * NOTE: `BusTui.connect()` throws if the Go binary is not reachable.
+ * Callers that explicitly want in-process mode should construct
+ * `MemoryBusTui` (or `MemoryBusClient`) directly.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";

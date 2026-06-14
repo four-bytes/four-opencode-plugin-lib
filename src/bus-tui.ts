@@ -10,11 +10,9 @@ interface SubEntry {
 }
 
 /**
- * TUI-side client for the plugin bus.
- * Connects via WebSocket, subscribes to channels, receives real-time messages.
- *
- * Falls back to in-memory EventBus when the Go binary is not available
- * (same-process only, no cross-process IPC, no wildcard matching).
+ * TUI-side client for the plugin bus. Connects via WebSocket, subscribes to
+ * channels, receives real-time messages. Throws on `connect()` if the Go bus
+ * is not available — use `new MemoryBusTui()` explicitly for in-process mode.
  *
  * Usage:
  *   const bus = await BusTui.connect();
@@ -37,22 +35,19 @@ export class BusTui {
   }
 
   /**
-   * Connect to the plugin bus via WebSocket.
-   * Falls back to in-memory EventBus if the Go binary is not available.
+   * Connect to the plugin bus via WebSocket. Throws if the Go bus is not available.
    */
   static async connect(timeoutMs = 5000): Promise<BusTui> {
+    const port = await discoverPort(timeoutMs);
+    const bus = new BusTui(port);
     try {
-      const port = await discoverPort(timeoutMs);
-      const bus = new BusTui(port);
       await bus.open();
-      return bus;
     } catch (err) {
-      console.warn(
-        "[BusTui] Go bus not available, using in-memory fallback:",
-        (err as Error).message,
+      throw new Error(
+        `[BusTui] failed to connect to Go bus on port ${port}: ${(err as Error).message}`,
       );
-      return new MemoryBusTui();
     }
+    return bus;
   }
 
   /**
@@ -228,15 +223,18 @@ class ScopedBusTui extends BusTui {
 }
 
 /**
- * In-memory fallback TUI client. Implements same API as BusTui.
+ * In-memory TUI client. Implements same API as BusTui.
  * Uses shared MemoryBus singleton — works within same process only.
  * Port is 0 (sentinel value for in-memory mode).
+ *
+ * Opt-in: instantiate directly with `new MemoryBusTui()`. `BusTui.connect()`
+ * no longer falls back to this class automatically.
  *
  * No WebSocket connection needed — messages flow through the shared
  * in-process EventBus. Wildcard patterns are NOT supported; use the
  * real Go bus for cross-process IPC and wildcard matching.
  */
-class MemoryBusTui extends BusTui {
+export class MemoryBusTui extends BusTui {
   private memorySubs: Map<string, Unsubscribe> = new Map();
 
   constructor() {

@@ -25,8 +25,15 @@ export declare class BusClient {
     private static findBusBinary;
     /**
      * Spawn the bus binary and read the port from stdout.
+     * Guarded by a module-level spawn lock so concurrent connect() calls share
+     * the same in-flight spawn instead of forking multiple bus processes.
      */
     private static startBus;
+    /**
+     * Inner spawn implementation — wraps the child process in a Promise.
+     * Kept separate from startBus() so the spawn lock can be released cleanly.
+     */
+    private static spawnBus;
     /**
      * Check if bus at given port is healthy.
      */
