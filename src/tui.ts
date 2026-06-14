@@ -10,3 +10,6 @@ export type {
   BusCallback,
   Unsubscribe,
 } from "./types.js";
+
+// ── Project ID ────────────────────────────────────────────
+export { deriveProjectId } from "./project-id.js";

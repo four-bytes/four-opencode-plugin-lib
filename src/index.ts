@@ -15,3 +15,6 @@ export { BusClient } from "./bus-client.js";
 
 // ── In-Memory Bus Fallback ─────────────────────────────────
 export { memoryBus } from "./memory-bus.js";
+
+// ── Project ID ────────────────────────────────────────────
+export { deriveProjectId } from "./project-id.js";
