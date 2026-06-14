@@ -124,7 +124,7 @@ The following patterns are currently implemented ad-hoc in individual plugins
 | Pattern | Where needed | Current state |
 |---------|-------------|---------------|
 | Start bus on plugin init, reuse if already running | `BusClient.connect()` | ✅ done |
-| Spawn lock — no concurrent starts | `BusClient.connect()` | ❌ missing (Issue #2) |
+| Spawn lock — no concurrent starts | `BusClient.connect()` | ✅ done (#2) |
 | TUI: reconnect with port re-discovery | `BusTui.scheduleReconnect()` | ❌ missing (Issue #1) |
 | TUI: don't dead-end in MemoryBusTui | `BusTui.connect()` | ❌ missing (Issue #3) |
 | Server: clean shutdown when opencode exits | Go idle timer + explicit `close()` | ⚠️ idle only |
