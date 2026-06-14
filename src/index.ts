@@ -17,4 +17,4 @@ export { BusClient } from "./bus-client.js";
 export { memoryBus } from "./memory-bus.js";
 
 // ── Project ID ────────────────────────────────────────────
-export { deriveProjectId } from "./project-id.js";
+export { deriveProjectId } from "./derive-project-id.js";

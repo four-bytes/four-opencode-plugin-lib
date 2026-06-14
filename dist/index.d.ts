@@ -8,4 +8,4 @@ export { discoverPort } from "./discovery";
 export type { BusEnvelope, BusHealth, PortInfo, BusCallback, Unsubscribe } from "./types";
 export { BusClient } from "./bus-client.js";
 export { memoryBus } from "./memory-bus.js";
-export { deriveProjectId } from "./project-id.js";
+export { deriveProjectId } from "./derive-project-id.js";
