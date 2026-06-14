@@ -1,6 +1,5 @@
 import { createSignal, createEffect, onMount, onCleanup } from "solid-js";
 import { BusTui } from "./bus-tui.js";
-import type { BusCallback } from "./types";
 
 /**
  * Reactive bus subscription for TUI plugins.
