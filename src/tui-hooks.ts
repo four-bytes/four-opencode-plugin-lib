@@ -21,51 +21,71 @@ export function useServiceBus(
   onMessage: (payload: unknown) => void,
 ): void {
   const [busTui, setBusTui] = createSignal<BusTui | null>(null);
-  let unmounted = false;
-  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let pingTimer: ReturnType<typeof setInterval> | null = null;
 
-  const connect = () => {
-    BusTui.connect()
-      .then((b) => {
-        if (unmounted) {
-          b.close();
-          return;
-        }
-        setBusTui(b);
-      })
-      .catch(() => {
-        if (!unmounted) {
-          retryTimer = setTimeout(connect, 5000); // retry every 5s
-        }
-      });
+  const cancelPingRetry = () => {
+    if (pingTimer !== null) {
+      clearInterval(pingTimer);
+      pingTimer = null;
+    }
   };
 
-  // Connect to bus once on mount (with retry on failure)
-  onMount(() => connect());
+  onMount(() => {
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+    let disposed = false;
 
-  // Reactively subscribe when bus and session are both ready
+    const tryConnect = () => {
+      BusTui.connect()
+        .then((b) => {
+          if (disposed) { b.close(); return; }
+          setBusTui(b);
+        })
+        .catch(() => {
+          if (!disposed) retryTimeout = setTimeout(tryConnect, 5000);
+        });
+    };
+
+    tryConnect();
+
+    onCleanup(() => {
+      disposed = true;
+      if (retryTimeout !== null) clearTimeout(retryTimeout);
+    });
+  });
+
   createEffect(() => {
     const b = busTui();
     const sid = sessionId();
+    cancelPingRetry();
     if (!b || !sid) return;
+
+    let confirmed = false;
 
     const unsub = b
       .forService(service)
       .forSession(sid)
       .subscribe(channel, (envelope) => {
+        confirmed = true;
+        cancelPingRetry();
         onMessage(envelope.payload);
       });
 
-    // Publish ping so the worker knows our session ID (continue mode fix)
-    b.forService(service).forSession(sid).publish("ping", { ts: Date.now() });
+    // Ping immediately, then retry every 2s until the worker responds.
+    const sendPing = () => b.forService(service).forSession(sid).publish("ping", { ts: Date.now() });
+    sendPing();
+    pingTimer = setInterval(() => {
+      if (confirmed) { cancelPingRetry(); return; }
+      sendPing();
+    }, 2000);
 
-    onCleanup(() => unsub?.());
+    onCleanup(() => {
+      cancelPingRetry();
+      unsub?.();
+    });
   });
 
-  // Cleanup bus on unmount — guard against late connect(), cancel retry
   onCleanup(() => {
-    unmounted = true;
-    if (retryTimer) clearTimeout(retryTimer);
+    cancelPingRetry();
     busTui()?.close();
   });
 }
