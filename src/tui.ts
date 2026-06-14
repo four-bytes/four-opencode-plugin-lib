@@ -1,5 +1,6 @@
 // Bus client — TUI entry point (P17b)
 export { BusTui } from "./bus-tui.js";
+export { useServiceBus } from "./tui-hooks.js";
 export { discoverPort } from "./discovery.js";
 export type {
   BusEnvelope,
