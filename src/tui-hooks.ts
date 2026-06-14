@@ -9,6 +9,10 @@ import type { BusCallback } from "./types";
  * to a session-scoped channel whenever both the bus connection
  * and session ID are available.
  *
+ * Cancellation-safe: if the component unmounts while a connect() is
+ * in-flight, the resulting bus handle is closed immediately instead
+ * of being stored. Retries connect() every 5s on failure.
+ *
  * Handles cleanup on session change and component unmount.
  */
 export function useServiceBus(
@@ -18,15 +22,27 @@ export function useServiceBus(
   onMessage: (payload: unknown) => void,
 ): void {
   const [busTui, setBusTui] = createSignal<BusTui | null>(null);
+  let unmounted = false;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-  // Connect to bus once on mount
-  onMount(() => {
+  const connect = () => {
     BusTui.connect()
-      .then((b) => setBusTui(b))
+      .then((b) => {
+        if (unmounted) {
+          b.close();
+          return;
+        }
+        setBusTui(b);
+      })
       .catch(() => {
-        // Bus unavailable — TUI shows connecting state
+        if (!unmounted) {
+          retryTimer = setTimeout(connect, 5000); // retry every 5s
+        }
       });
-  });
+  };
+
+  // Connect to bus once on mount (with retry on failure)
+  onMount(() => connect());
 
   // Reactively subscribe when bus and session are both ready
   createEffect(() => {
@@ -44,8 +60,10 @@ export function useServiceBus(
     onCleanup(() => unsub?.());
   });
 
-  // Cleanup bus on unmount
+  // Cleanup bus on unmount — guard against late connect(), cancel retry
   onCleanup(() => {
+    unmounted = true;
+    if (retryTimer) clearTimeout(retryTimer);
     busTui()?.close();
   });
 }
