@@ -112,6 +112,11 @@ export class BusTui {
     return new ScopedBusTui(this, `${id}/`);
   }
 
+  /** Returns a scoped TUI bus that prefixes all channels with {projectId}/ */
+  forProject(id: string): BusTui {
+    return new ScopedBusTui(this, `${id}/`);
+  }
+
   // ── Private ────────────────────────────────────────────
 
   private async open(): Promise<void> {
@@ -218,6 +223,10 @@ class ScopedBusTui extends BusTui {
   }
 
   override forSession(id: string): BusTui {
+    return new ScopedBusTui(this.inner, this.prefix + id + "/");
+  }
+
+  override forProject(id: string): BusTui {
     return new ScopedBusTui(this.inner, this.prefix + id + "/");
   }
 }

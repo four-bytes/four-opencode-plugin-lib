@@ -44,6 +44,8 @@ export declare class BusTui {
     forService(name: string): BusTui;
     /** Returns a scoped TUI bus that prefixes all channels with {sessionId}/ */
     forSession(id: string): BusTui;
+    /** Returns a scoped TUI bus that prefixes all channels with {projectId}/ */
+    forProject(id: string): BusTui;
     private open;
     private scheduleReconnect;
     private updateSubscriptions;
