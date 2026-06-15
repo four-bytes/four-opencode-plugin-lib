@@ -217,6 +217,11 @@ export class BusClient {
   forSession(id: string): BusClient {
     return new ScopedBusClient(this, `${id}/`);
   }
+
+  /** Returns a scoped client that prefixes all channels with {projectId}/ */
+  forProject(id: string): BusClient {
+    return new ScopedBusClient(this, `${id}/`);
+  }
 }
 
 /**
@@ -252,6 +257,10 @@ class ScopedBusClient extends BusClient {
   }
 
   override forSession(id: string): BusClient {
+    return new ScopedBusClient(this.inner, this.prefix + id + "/");
+  }
+
+  override forProject(id: string): BusClient {
     return new ScopedBusClient(this.inner, this.prefix + id + "/");
   }
 }
