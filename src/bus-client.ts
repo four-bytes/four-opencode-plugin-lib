@@ -33,9 +33,15 @@ export class BusClient {
   /**
    * Connect to the plugin bus. Auto-starts the bus binary if not running.
    * Falls back to in-memory EventBus if no binary is available.
-   * @param timeoutMs — Max time to wait for bus to start (default 5000ms)
+   * @param opts.timeoutMs — Max time to wait for bus to start (default 5000ms)
+   * @param opts.onWarn — Optional callback for warning messages (default console.warn)
    */
-  static async connect(timeoutMs = 5000): Promise<BusClient> {
+  static async connect(
+    opts?: { timeoutMs?: number; onWarn?: (message: string, ...args: unknown[]) => void },
+  ): Promise<BusClient> {
+    const timeoutMs = opts?.timeoutMs ?? 5000;
+    const warn = opts?.onWarn ?? console.warn;
+
     // 1. Check if bus is already running
     try {
       const port = await discoverPort(500); // quick check — 500ms
@@ -49,11 +55,11 @@ export class BusClient {
 
     // 2. Auto-start the bus binary
     try {
-      const port = await BusClient.startBus(timeoutMs);
+      const port = await BusClient.startBus(timeoutMs, warn);
       return new BusClient(port);
     } catch (err) {
       // 3. Fallback to in-memory bus (no binary available)
-      console.warn(
+      warn(
         "[BusClient] Go bus not available, using in-memory fallback:",
         (err as Error).message,
       );
@@ -74,9 +80,12 @@ export class BusClient {
    * Guarded by a module-level spawn lock so concurrent connect() calls share
    * the same in-flight spawn instead of forking multiple bus processes.
    */
-  private static async startBus(timeoutMs: number): Promise<number> {
+  private static async startBus(
+    timeoutMs: number,
+    warn: (message: string, ...args: unknown[]) => void,
+  ): Promise<number> {
     if (spawnLock) return spawnLock;
-    spawnLock = BusClient.spawnBus(timeoutMs).finally(() => {
+    spawnLock = BusClient.spawnBus(timeoutMs, warn).finally(() => {
       spawnLock = null;
     });
     return spawnLock;
@@ -86,7 +95,10 @@ export class BusClient {
    * Inner spawn implementation — wraps the child process in a Promise.
    * Kept separate from startBus() so the spawn lock can be released cleanly.
    */
-  private static spawnBus(timeoutMs: number): Promise<number> {
+  private static spawnBus(
+    timeoutMs: number,
+    warn: (message: string, ...args: unknown[]) => void,
+  ): Promise<number> {
     const binary = BusClient.findBusBinary();
     return new Promise((resolve, reject) => {
       const child = spawn(binary, [], {
@@ -118,7 +130,7 @@ export class BusClient {
 
       child.stderr?.on("data", (data: Buffer) => {
         // Log stderr but don't fail — Go may print warnings
-        console.warn("[BusClient] bus stderr:", data.toString().trim());
+        warn("[BusClient] bus stderr:", data.toString().trim());
       });
 
       child.on("error", (err) => {
