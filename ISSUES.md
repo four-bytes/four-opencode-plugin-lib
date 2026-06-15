@@ -91,12 +91,12 @@ for the session lifetime.
 instance. The initial timeout can be shorter (e.g., 2 s) to stay responsive; reconnect
 logic (with re-discovery, see Issue #1) then handles the retry naturally.
 
-The original `scheduleReconnect()` approach was replaced in commit ccde741:
-`BusTui.connect()` now throws on failure instead of returning a reconnect-capable instance.
-Use `useServiceBus` (commit 1879f2b) for reactive bus subscriptions in TUI contexts.
-
-`scheduleReconnect()` with re-discovery (Issue #1 fix) then handles finding the bus once
-it appears, without needing a separate `MemoryBusTui` class.
+**Current implementation (post-ccde741):**
+- `BusTui.connect()` throws on failure — no retries, no fallback to `MemoryBusTui`.
+- Initial discovery and retry is handled by `useServiceBus` (commit 1879f2b), which wraps
+  re-discovery logic in a reactive hook for TUI contexts.
+- `scheduleReconnect()` handles reconnection only *after* a `BusTui` instance is already
+  connected (e.g., WebSocket drops), with port re-discovery (Issue #1 fix).
 
 ---
 
