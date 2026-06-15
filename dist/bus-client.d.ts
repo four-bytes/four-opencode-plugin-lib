@@ -15,9 +15,13 @@ export declare class BusClient {
     /**
      * Connect to the plugin bus. Auto-starts the bus binary if not running.
      * Falls back to in-memory EventBus if no binary is available.
-     * @param timeoutMs — Max time to wait for bus to start (default 5000ms)
+     * @param opts.timeoutMs — Max time to wait for bus to start (default 5000ms)
+     * @param opts.onWarn — Optional callback for warning messages (default console.warn)
      */
-    static connect(timeoutMs?: number): Promise<BusClient>;
+    static connect(opts?: {
+        timeoutMs?: number;
+        onWarn?: (message: string, ...args: unknown[]) => void;
+    }): Promise<BusClient>;
     /**
      * Resolve the bus binary path.
      * Prefers ~/.local/bin/bus over bare "bus" (which relies on PATH).
