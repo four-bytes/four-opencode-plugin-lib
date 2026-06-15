@@ -43,6 +43,7 @@ export class BusTui {
     try {
       await bus.open();
     } catch (err) {
+      bus.close(); // prevent onclose → scheduleReconnect loop on dead instance
       throw new Error(
         `[BusTui] failed to connect to Go bus on port ${port}: ${(err as Error).message}`,
       );

@@ -91,26 +91,12 @@ for the session lifetime.
 instance. The initial timeout can be shorter (e.g., 2 s) to stay responsive; reconnect
 logic (with re-discovery, see Issue #1) then handles the retry naturally.
 
-```typescript
-static async connect(timeoutMs = 5000): Promise<BusTui> {
-  let port: number;
-  try {
-    port = await discoverPort(timeoutMs);
-  } catch {
-    // Bus not yet running — return a BusTui that will reconnect once it appears.
-    // Port 0 signals "unknown"; scheduleReconnect will discover the real port.
-    const bus = new BusTui(0);
-    bus.scheduleReconnect(); // starts immediate retry loop
-    return bus;
-  }
-  const bus = new BusTui(port);
-  await bus.open();
-  return bus;
-}
-```
-
-`scheduleReconnect()` with re-discovery (Issue #1 fix) then handles finding the bus once
-it appears, without needing a separate `MemoryBusTui` class.
+**Current implementation (post-ccde741):**
+- `BusTui.connect()` throws on failure — no retries, no fallback to `MemoryBusTui`.
+- Initial discovery and retry is handled by `useServiceBus` (commit 1879f2b), which wraps
+  re-discovery logic in a reactive hook for TUI contexts.
+- `scheduleReconnect()` handles reconnection only *after* a `BusTui` instance is already
+  connected (e.g., WebSocket drops), with port re-discovery (Issue #1 fix).
 
 ---
 
@@ -125,8 +111,8 @@ The following patterns are currently implemented ad-hoc in individual plugins
 |---------|-------------|---------------|
 | Start bus on plugin init, reuse if already running | `BusClient.connect()` | ✅ done |
 | Spawn lock — no concurrent starts | `BusClient.connect()` | ✅ done (#2) |
-| TUI: reconnect with port re-discovery | `BusTui.scheduleReconnect()` | ❌ missing (Issue #1) |
-| TUI: don't dead-end in MemoryBusTui | `BusTui.connect()` | ❌ missing (Issue #3) |
+| TUI: reconnect with port re-discovery | `BusTui.scheduleReconnect()` | ✅ done (Issue #1) |
+| TUI: don't dead-end in MemoryBusTui | `BusTui.connect()` | ✅ done (Issue #3) |
 | Server: clean shutdown when opencode exits | Go idle timer + explicit `close()` | ⚠️ idle only |
 
 ✅ `useServiceBus` hook extracted — commit 1879f2b (reactive bus subscription for TUIs;
