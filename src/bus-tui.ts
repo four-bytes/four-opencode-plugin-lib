@@ -76,7 +76,6 @@ export class BusTui {
    */
   publish(channel: string, payload: unknown): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.warn("[BusTui] Cannot publish — not connected");
       return;
     }
     const envelope: BusEnvelope = {
