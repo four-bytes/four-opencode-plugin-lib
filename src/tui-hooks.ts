@@ -44,12 +44,11 @@ export function useServiceBus(
         .catch(() => {
           if (disposed) return;
           // Same-process fallback only when no HTTP polling endpoint is configured.
-          // When pollEndpoint is provided, leave bus null so HTTP polling activates.
           if (!opts?.pollEndpoint) {
             setBusTui(new MemoryBusTui());
-            return;
           }
-          // Polling mode: retry connecting to real bus so we can recover
+          // Always retry — even after MemoryBusTui fallback, so the real Go bus
+          // can be recovered when it becomes available.
           if (retryTimeout === null) {
             retryTimeout = setTimeout(() => {
               retryTimeout = null;
