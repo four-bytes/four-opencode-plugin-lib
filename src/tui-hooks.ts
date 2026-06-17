@@ -42,10 +42,19 @@ export function useServiceBus(
           setBusTui(b);
         })
         .catch(() => {
-          // Fallback 1: In-memory bus (same-process only)
-          if (!disposed) {
-            const memBus = new MemoryBusTui();
-            setBusTui(memBus as unknown as BusTui);
+          if (disposed) return;
+          // Same-process fallback only when no HTTP polling endpoint is configured.
+          // When pollEndpoint is provided, leave bus null so HTTP polling activates.
+          if (!opts?.pollEndpoint) {
+            setBusTui(new MemoryBusTui());
+            return;
+          }
+          // Polling mode: retry connecting to real bus so we can recover
+          if (retryTimeout === null) {
+            retryTimeout = setTimeout(() => {
+              retryTimeout = null;
+              tryConnect();
+            }, 5000);
           }
         });
     };
@@ -96,6 +105,7 @@ export function useServiceBus(
 
   // Fallback 2: HTTP polling when no bus connection and endpoint is available
   let pollInterval: ReturnType<typeof setInterval> | null = null;
+  let pollAbort: AbortController | null = null;
 
   createEffect(() => {
     const b = busTui();
@@ -116,8 +126,10 @@ export function useServiceBus(
     if (pollInterval !== null) return; // already polling
 
     pollInterval = setInterval(async () => {
+      pollAbort?.abort();
+      pollAbort = new AbortController();
       try {
-        const res = await fetch(`${opts.pollEndpoint}/status`);
+        const res = await fetch(`${opts.pollEndpoint}/status`, { signal: pollAbort.signal });
         if (res.ok) {
           const data = await res.json();
           onMessage(data);
@@ -128,6 +140,8 @@ export function useServiceBus(
     }, 2000);
 
     onCleanup(() => {
+      pollAbort?.abort();
+      pollAbort = null;
       if (pollInterval !== null) {
         clearInterval(pollInterval);
         pollInterval = null;
