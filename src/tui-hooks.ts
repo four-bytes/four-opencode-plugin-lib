@@ -39,6 +39,8 @@ export function useServiceBus(
       BusTui.connect()
         .then((b) => {
           if (disposed) { b.close(); return; }
+          const old = busTui();
+          if (old) old.close();
           setBusTui(b);
         })
         .catch(() => {
