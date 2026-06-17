@@ -1,5 +1,5 @@
 import { createSignal, createEffect, onMount, onCleanup } from "solid-js";
-import { BusTui } from "./bus-tui.js";
+import { BusTui, MemoryBusTui } from "./bus-tui.js";
 
 /**
  * Reactive bus subscription for TUI plugins.
@@ -19,6 +19,7 @@ export function useServiceBus(
   sessionId: () => string | undefined,
   channel: string,
   onMessage: (payload: unknown) => void,
+  opts?: { pollEndpoint?: string },
 ): void {
   const [busTui, setBusTui] = createSignal<BusTui | null>(null);
   let pingTimer: ReturnType<typeof setInterval> | null = null;
@@ -41,7 +42,11 @@ export function useServiceBus(
           setBusTui(b);
         })
         .catch(() => {
-          if (!disposed) retryTimeout = setTimeout(tryConnect, 5000);
+          // Fallback 1: In-memory bus (same-process only)
+          if (!disposed) {
+            const memBus = new MemoryBusTui();
+            setBusTui(memBus as unknown as BusTui);
+          }
         });
     };
 
@@ -59,6 +64,9 @@ export function useServiceBus(
     cancelPingRetry();
     if (!b || !sid) return;
 
+    // Skip WebSocket ping for in-memory bus
+    const isMemoryBus = b instanceof MemoryBusTui;
+
     let confirmed = false;
 
     const unsub = b
@@ -70,17 +78,60 @@ export function useServiceBus(
         onMessage(envelope.payload);
       });
 
-    // Ping immediately, then retry every 2s until the worker responds.
-    const sendPing = () => b.forService(service).forSession(sid).publish("ping", { ts: Date.now() });
-    sendPing();
-    pingTimer = setInterval(() => {
-      if (confirmed) { cancelPingRetry(); return; }
+    // Only send ping for real WebSocket connections
+    if (!isMemoryBus) {
+      const sendPing = () => b.forService(service).forSession(sid).publish("ping", { ts: Date.now() });
       sendPing();
-    }, 2000);
+      pingTimer = setInterval(() => {
+        if (confirmed) { cancelPingRetry(); return; }
+        sendPing();
+      }, 2000);
+    }
 
     onCleanup(() => {
       cancelPingRetry();
       unsub?.();
+    });
+  });
+
+  // Fallback 2: HTTP polling when no bus connection and endpoint is available
+  let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+  createEffect(() => {
+    const b = busTui();
+    const sid = sessionId();
+
+    // Stop polling if we have a bus connection
+    if (b) {
+      if (pollInterval !== null) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+      return;
+    }
+
+    // Start polling if we have an endpoint but no bus
+    if (!sid || !opts?.pollEndpoint) return;
+
+    if (pollInterval !== null) return; // already polling
+
+    pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`${opts.pollEndpoint}/status`);
+        if (res.ok) {
+          const data = await res.json();
+          onMessage(data);
+        }
+      } catch {
+        // endpoint not reachable — wait for next poll
+      }
+    }, 2000);
+
+    onCleanup(() => {
+      if (pollInterval !== null) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
     });
   });
 

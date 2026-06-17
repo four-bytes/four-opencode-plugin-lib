@@ -34,7 +34,7 @@ export class BusClient {
    * Connect to the plugin bus. Auto-starts the bus binary if not running.
    * Falls back to in-memory EventBus if no binary is available.
    * @param opts.timeoutMs — Max time to wait for bus to start (default 5000ms)
-   * @param opts.onWarn — Optional callback for warning messages (default console.warn)
+   * @param opts.onWarn — Warning callback. Pass your framework's logger (e.g. opencode's `client.app.log`) to route warnings through the plugin logging system. Defaults to `console.warn` if omitted — only use the default during development/testing.
    */
   static async connect(
     opts?: { timeoutMs?: number; onWarn?: (message: string, ...args: unknown[]) => void },
@@ -278,9 +278,14 @@ class ScopedBusClient extends BusClient {
 }
 
 /**
- * In-memory fallback client. Implements same API as BusClient.
- * Uses shared MemoryBus singleton — works within same process only.
- * Port is 0 (sentinel value for in-memory mode).
+ * In-memory fallback used when the Go binary is unavailable.
+ *
+ * BusClient.connect() attempts to spawn the Go bus binary; if that fails
+ * (binary not found, permission denied, or timeout), it falls back to this
+ * in-memory client so plugins continue to work in dev/test environments.
+ *
+ * Uses the shared MemoryBus singleton — messages are only delivered within
+ * the same process. Set `port = 0` as a sentinel for in-memory mode.
  */
 class MemoryBusClient extends BusClient {
   constructor() {
