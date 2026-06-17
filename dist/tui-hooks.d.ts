@@ -11,4 +11,6 @@
  *
  * Handles cleanup on session change and component unmount.
  */
-export declare function useServiceBus(service: string, sessionId: () => string | undefined, channel: string, onMessage: (payload: unknown) => void): void;
+export declare function useServiceBus(service: string, sessionId: () => string | undefined, channel: string, onMessage: (payload: unknown) => void, opts?: {
+    pollEndpoint?: string;
+}): void;

@@ -16,7 +16,7 @@ export declare class BusClient {
      * Connect to the plugin bus. Auto-starts the bus binary if not running.
      * Falls back to in-memory EventBus if no binary is available.
      * @param opts.timeoutMs — Max time to wait for bus to start (default 5000ms)
-     * @param opts.onWarn — Optional callback for warning messages (default console.warn)
+     * @param opts.onWarn — Warning callback. Pass your framework's logger (e.g. opencode's `client.app.log`) to route warnings through the plugin logging system. Defaults to `console.warn` if omitted — only use the default during development/testing.
      */
     static connect(opts?: {
         timeoutMs?: number;
