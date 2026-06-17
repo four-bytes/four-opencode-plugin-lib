@@ -111,8 +111,9 @@ export function useServiceBus(
     const b = busTui();
     const sid = sessionId();
 
-    // Stop polling if we have a bus connection
-    if (b) {
+    // Stop polling only if we have a real bus connection. MemoryBusTui is
+    // same-process only, so keep HTTP polling as the cross-process fallback.
+    if (b && !(b instanceof MemoryBusTui)) {
       if (pollInterval !== null) {
         clearInterval(pollInterval);
         pollInterval = null;
