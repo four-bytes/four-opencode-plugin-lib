@@ -26,8 +26,7 @@ export function useProjectBus(
   directory: string,
   channel: string,
   onMessage: (payload: unknown) => void,
-  opts?: { pollEndpoint?: string },
 ): void {
   const projectId = deriveProjectId(directory);
-  useServiceBus(service, () => projectId, channel, onMessage, opts);
+  useServiceBus(service, () => projectId, channel, onMessage);
 }
