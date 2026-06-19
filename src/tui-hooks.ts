@@ -39,18 +39,17 @@ export function useServiceBus(
       BusTui.connect()
         .then((b) => {
           if (disposed) { b.close(); return; }
-          const old = busTui();
-          if (old) old.close();
           setBusTui(b);
         })
         .catch(() => {
           if (disposed) return;
           // Same-process fallback only when no HTTP polling endpoint is configured.
+          // When pollEndpoint is provided, leave bus null so HTTP polling activates.
           if (!opts?.pollEndpoint) {
             setBusTui(new MemoryBusTui());
+            return;
           }
-          // Always retry — even after MemoryBusTui fallback, so the real Go bus
-          // can be recovered when it becomes available.
+          // Polling mode: retry connecting to real bus so we can recover
           if (retryTimeout === null) {
             retryTimeout = setTimeout(() => {
               retryTimeout = null;
@@ -112,9 +111,8 @@ export function useServiceBus(
     const b = busTui();
     const sid = sessionId();
 
-    // Stop polling only if we have a real bus connection. MemoryBusTui is
-    // same-process only, so keep HTTP polling as the cross-process fallback.
-    if (b && !(b instanceof MemoryBusTui)) {
+    // Stop polling if we have a bus connection
+    if (b) {
       if (pollInterval !== null) {
         clearInterval(pollInterval);
         pollInterval = null;
