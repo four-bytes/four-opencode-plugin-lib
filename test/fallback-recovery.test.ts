@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { spawn, type Subprocess } from "bun";
-import { unlinkSync, existsSync } from "node:fs";
+import { unlinkSync, existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { BusClient } from "../src/bus-client.js";
@@ -32,7 +32,7 @@ function cleanPortFile(): void {
 // Spawn bus and wait for port file to appear
 async function startBus(): Promise<Subprocess> {
   cleanPortFile();
-  const proc = spawn([BUS_BINARY], { stdout: "pipe", stderr: "pipe" });
+  const proc = spawn([BUS_BINARY], { stdout: "ignore", stderr: "ignore" });
   await discoverPort(5000);
   await new Promise((r) => setTimeout(r, 200));
   return proc;
@@ -109,9 +109,9 @@ describe("Bus fallback and recovery flow", () => {
     });
 
     it("throws when port file exists but bus process is dead", async () => {
-      // Write a stale port file pointing to a dead port
+      // Write a syntactically valid stale port file; no server is listening there.
       cleanPortFile();
-      // 0 is an invalid port — discoverPort will throw after timeout
+      writeFileSync(PORT_FILE, JSON.stringify({ port: 65534 }), "utf-8");
       await expect(BusTui.connect(1000)).rejects.toThrow();
     });
   });
@@ -276,6 +276,7 @@ describe("Bus fallback and recovery flow", () => {
 
       // MemoryBusTui should NOT have received the new message (it was closed)
       // Real BusTui should have received it
+      expect(receivedMemory.length).toBe(0);
       expect(receivedReal.length).toBe(1);
       expect((receivedReal[0] as any).viaRealBus).toBe(true);
 
