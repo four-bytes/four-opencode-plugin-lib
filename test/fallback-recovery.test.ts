@@ -12,39 +12,23 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { spawn, type Subprocess } from "bun";
-import { unlinkSync, existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { BusClient } from "../src/bus-client.js";
 import { BusTui, MemoryBusTui } from "../src/bus-tui.js";
-import { discoverPort } from "../src/discovery.js";
+import { BUS_PORT } from "../src/types.js";
 
 const BUS_BINARY = join(homedir(), ".local", "bin", "four-local-bus");
-const PORT_FILE = join(homedir(), ".cache", "opencode", "plugin-bus", "port.json");
 
-// Clean port file so discoverPort throws → BusTui.connect() throws
-function cleanPortFile(): void {
-  if (existsSync(PORT_FILE)) {
-    unlinkSync(PORT_FILE);
-  }
-}
-
-// Spawn bus and wait for port file to appear
 async function startBus(): Promise<Subprocess> {
-  cleanPortFile();
-  const proc = spawn([BUS_BINARY], { stdout: "ignore", stderr: "ignore" });
-  await discoverPort(5000);
-  await new Promise((r) => setTimeout(r, 200));
+  const proc = spawn([BUS_BINARY], { stdio: ["ignore", "pipe", "pipe"] });
+  // Wait for bus to initialize (fixed port 4099)
+  await new Promise((r) => setTimeout(r, 1000));
   return proc;
 }
 
-// Stop bus and clean up port file
 async function stopBus(proc: Subprocess | null): Promise<void> {
-  if (proc) {
-    proc.kill();
-    await proc.exited;
-  }
-  cleanPortFile();
+  if (proc) { proc.kill(); await proc.exited; }
 }
 
 describe("Bus fallback and recovery flow", () => {
@@ -102,16 +86,15 @@ describe("Bus fallback and recovery flow", () => {
   // Test 2: BusTui.connect() throws when Go bus unavailable
   // ═══════════════════════════════════════════════════════════════════
   describe("BusTui.connect() throws without Go bus", () => {
-    it("throws when port file does not exist", async () => {
-      cleanPortFile();
-
+    it("throws when bus is not running", async () => {
+      // Ensure bus is not running
+      const { spawnSync } = await import("node:child_process");
+      spawnSync("pkill", ["-f", "four-local-bus"], { stdio: "ignore" });
       await expect(BusTui.connect(1000)).rejects.toThrow();
     });
 
-    it("throws when port file exists but bus process is dead", async () => {
-      // Write a syntactically valid stale port file; no server is listening there.
-      cleanPortFile();
-      writeFileSync(PORT_FILE, JSON.stringify({ port: 65534 }), "utf-8");
+    it("throws when port is not listening", async () => {
+      // Try connecting to a port where nothing is listening
       await expect(BusTui.connect(1000)).rejects.toThrow();
     });
   });
@@ -121,8 +104,6 @@ describe("Bus fallback and recovery flow", () => {
   // ═══════════════════════════════════════════════════════════════════
   describe("Go bus recovery", () => {
     it("BusTui.connect() succeeds after bus starts", async () => {
-      cleanPortFile(); // ensure BusTui.connect() would fail initially
-
       // Start bus
       const proc = await startBus();
 
@@ -238,7 +219,7 @@ describe("Bus fallback and recovery flow", () => {
   describe("useServiceBus recovery simulation", () => {
     it("after MemoryBusTui fallback, retry picks up real BusTui", async () => {
       // Step 1: No bus running — BusTui.connect() would fail
-      cleanPortFile();
+      // (MemoryBusTui fallback handles this)
 
       // Simulate useServiceBus behaviour: catch connect() failure,
       // fall back to MemoryBusTui, then retry after bus starts

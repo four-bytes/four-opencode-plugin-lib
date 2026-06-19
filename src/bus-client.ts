@@ -1,9 +1,8 @@
 import { spawn } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { discoverPort } from "./discovery.js";
 import { memoryBus } from "./memory-bus.js";
-import type { BusEnvelope, BusHealth } from "./types.js";
+import { BUS_PORT, type BusEnvelope, type BusHealth } from "./types.js";
 
 const BASE_URL = "http://127.0.0.1";
 
@@ -42,12 +41,11 @@ export class BusClient {
     const timeoutMs = opts?.timeoutMs ?? 5000;
     const warn = opts?.onWarn ?? console.warn;
 
-    // 1. Check if bus is already running
+    // 1. Check if bus is already running on fixed port
     try {
-      const port = await discoverPort(500); // quick check — 500ms
-      const healthy = await BusClient.checkHealth(port);
+      const healthy = await BusClient.checkHealth(BUS_PORT);
       if (healthy) {
-        return new BusClient(port);
+        return new BusClient(BUS_PORT);
       }
     } catch {
       // Bus not running — will auto-start below
@@ -229,6 +227,11 @@ export class BusClient {
   forSession(id: string): BusClient {
     return new ScopedBusClient(this, `${id}/`);
   }
+
+  /** Returns a scoped client that prefixes all channels with {projectId}/ */
+  forProject(id: string): BusClient {
+    return new ScopedBusClient(this, `${id}/`);
+  }
 }
 
 /**
@@ -264,6 +267,10 @@ class ScopedBusClient extends BusClient {
   }
 
   override forSession(id: string): BusClient {
+    return new ScopedBusClient(this.inner, this.prefix + id + "/");
+  }
+
+  override forProject(id: string): BusClient {
     return new ScopedBusClient(this.inner, this.prefix + id + "/");
   }
 }

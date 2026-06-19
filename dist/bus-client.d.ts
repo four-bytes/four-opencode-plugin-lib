@@ -64,4 +64,6 @@ export declare class BusClient {
     forService(name: string): BusClient;
     /** Returns a scoped client that prefixes all channels with {sessionId}/ */
     forSession(id: string): BusClient;
+    /** Returns a scoped client that prefixes all channels with {projectId}/ */
+    forProject(id: string): BusClient;
 }

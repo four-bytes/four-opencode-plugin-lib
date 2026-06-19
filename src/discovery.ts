@@ -5,6 +5,12 @@ import type { PortInfo } from "./types.js";
 
 const PORT_FILE = join(homedir(), ".cache", "opencode", "plugin-bus", "port.json");
 
+/**
+ * Deprecated: discovery.ts is no longer used. The bus now listens on a fixed
+ * port (4099) instead of a random port with file-based discovery.
+ * This file is kept for reference but is not imported by current bus code.
+ */
+
 export async function discoverPort(timeoutMs = 3000): Promise<number> {
   const deadline = Date.now() + timeoutMs;
   let lastError: unknown;

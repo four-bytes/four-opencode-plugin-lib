@@ -1,4 +1,4 @@
-import type { BusCallback, Unsubscribe } from "./types.js";
+import { type BusCallback, type Unsubscribe } from "./types.js";
 /**
  * TUI-side client for the plugin bus. Connects via WebSocket, subscribes to
  * channels, receives real-time messages. Throws on `connect()` if the Go bus
@@ -23,7 +23,7 @@ export declare class BusTui {
     /**
      * Connect to the plugin bus via WebSocket. Throws if the Go bus is not available.
      */
-    static connect(timeoutMs?: number): Promise<BusTui>;
+    static connect(_timeoutMs?: number): Promise<BusTui>;
     /**
      * Subscribe to a channel pattern. Callback fires on each matching message.
      * Returns an unsubscribe function.

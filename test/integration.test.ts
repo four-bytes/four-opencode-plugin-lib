@@ -10,38 +10,24 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { spawn, type Subprocess } from "bun";
-import { unlinkSync, existsSync } from "node:fs";
-import { join } from "node:path";
-import { homedir } from "node:os";
 import { BusClient } from "../src/bus-client.js";
 import { BusTui } from "../src/bus-tui.js";
-import { discoverPort } from "../src/discovery.js";
+import { BUS_PORT } from "../src/types.js";
 
-const BUS_BINARY = "/home/robby/four-opencode-plugin-bus/bus";
-const PORT_FILE = join(homedir(), ".cache", "opencode", "plugin-bus", "port.json");
+const BUS_BINARY = "/home/robby/.local/bin/four-local-bus";
 
 describe("Plugin Bus Integration", () => {
   let busProcess: Subprocess | null = null;
-  let port: number = 0;
 
   beforeAll(async () => {
-    // Clean up any stale port file from previous runs
-    // This ensures discoverPort waits for the NEW bus instance
-    if (existsSync(PORT_FILE)) {
-      unlinkSync(PORT_FILE);
-    }
-
     // Start bus binary
     busProcess = spawn([BUS_BINARY], {
       stdout: "pipe",
       stderr: "pipe",
     });
 
-    // Wait for port file (bus writes it after binding to a random port)
-    port = await discoverPort(5000);
-
-    // Give it a moment to fully initialize HTTP server
-    await new Promise((r) => setTimeout(r, 200));
+    // Wait for bus to be ready (fixed port 4099)
+    await new Promise((r) => setTimeout(r, 1000));
   }, 10000);
 
   afterAll(async () => {
@@ -55,7 +41,7 @@ describe("Plugin Bus Integration", () => {
     const client = await BusClient.connect();
     const healthy = await client.healthCheck();
     expect(healthy).toBe(true);
-    expect(client.activePort).toBe(port);
+    expect(client.activePort).toBe(BUS_PORT);
   });
 
   it("publishes and receives via last-value cache", async () => {

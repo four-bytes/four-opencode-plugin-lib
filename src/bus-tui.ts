@@ -1,6 +1,5 @@
-import { discoverPort } from "./discovery.js";
 import { memoryBus } from "./memory-bus.js";
-import type { BusEnvelope, BusCallback, Unsubscribe } from "./types.js";
+import { BUS_PORT, type BusEnvelope, type BusCallback, type Unsubscribe } from "./types.js";
 
 const WS_BASE = "ws://127.0.0.1";
 
@@ -37,8 +36,8 @@ export class BusTui {
   /**
    * Connect to the plugin bus via WebSocket. Throws if the Go bus is not available.
    */
-  static async connect(timeoutMs = 5000): Promise<BusTui> {
-    const port = await discoverPort(timeoutMs);
+  static async connect(_timeoutMs?: number): Promise<BusTui> {
+    const port = BUS_PORT;
     const bus = new BusTui(port);
     try {
       await bus.open();
@@ -164,15 +163,7 @@ export class BusTui {
   private scheduleReconnect(): void {
     if (this.closed) return;
     this.reconnectTimer = setTimeout(async () => {
-      // Re-read the port file — the bus may have restarted on a new port
-      // (e.g. after a crash) and the cached port would now be dead.
-      this.port = 0;
-      try {
-        const port = await discoverPort(2000);
-        if (port > 0) this.port = port;
-      } catch {
-        // discoverPort failed — keep port=0, open() will report and retry
-      }
+      // Fixed port — no port re-discovery needed
       try {
         await this.open();
       } catch {

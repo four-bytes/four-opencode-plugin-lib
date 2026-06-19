@@ -1,3 +1,6 @@
+/** Fixed port for the Go bus server. Single process per user, no discovery needed. */
+export const BUS_PORT = 4099;
+
 /** Message envelope published on the plugin bus */
 export interface BusEnvelope<C extends string = string, P = unknown> {
   channel: C;

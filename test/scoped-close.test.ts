@@ -9,28 +9,26 @@
 
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { spawn, type Subprocess } from "bun";
-import { unlinkSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { BusClient } from "../src/bus-client.js";
 import { BusTui } from "../src/bus-tui.js";
-import { discoverPort } from "../src/discovery.js";
+import { BUS_PORT } from "../src/types.js";
 
 const BUS_BINARY = join(homedir(), ".local", "bin", "four-local-bus");
-const PORT_FILE = join(homedir(), ".cache", "opencode", "plugin-bus", "port.json");
+
+async function startBus(): Promise<Subprocess> {
+  const proc = spawn([BUS_BINARY], { stdio: ["ignore", "pipe", "pipe"] });
+  // Wait for bus to initialize (fixed port 4099)
+  await new Promise((r) => setTimeout(r, 1000));
+  return proc;
+}
 
 describe("Scoped bus close (P1 bug #10)", () => {
   let busProcess: Subprocess | null = null;
 
   beforeAll(async () => {
-    if (existsSync(PORT_FILE)) {
-      unlinkSync(PORT_FILE);
-    }
-    busProcess = spawn([BUS_BINARY], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    await discoverPort(5000);
+    busProcess = await startBus();
     await new Promise((r) => setTimeout(r, 200));
   }, 10000);
 
@@ -38,9 +36,6 @@ describe("Scoped bus close (P1 bug #10)", () => {
     if (busProcess) {
       busProcess.kill();
       await busProcess.exited;
-    }
-    if (existsSync(PORT_FILE)) {
-      unlinkSync(PORT_FILE);
     }
   });
 

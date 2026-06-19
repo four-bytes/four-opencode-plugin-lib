@@ -4,7 +4,6 @@ export { createJsonlLogger } from "./logger";
 export type { DebugEvent, JsonlLogger } from "./logger";
 export { LRUCache, sessionCache } from "./cache";
 export { EventBus } from "./event-bus";
-export { discoverPort } from "./discovery";
 export type { BusEnvelope, BusHealth, PortInfo, BusCallback, Unsubscribe } from "./types";
 export { BusClient } from "./bus-client.js";
 export { memoryBus } from "./memory-bus.js";

@@ -9,7 +9,6 @@ export { LRUCache, sessionCache } from "./cache";
 export { EventBus } from "./event-bus";
 
 // ── Bus Client (P17b) ──────────────────────────────────────
-export { discoverPort } from "./discovery";
 export type { BusEnvelope, BusHealth, PortInfo, BusCallback, Unsubscribe } from "./types";
 export { BusClient } from "./bus-client.js";
 

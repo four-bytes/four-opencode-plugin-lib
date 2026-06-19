@@ -40,9 +40,17 @@ Apache-2.0
 
 > If this plugin saves you tokens, consider leaving a ⭐ on [GitHub](https://github.com/four-bytes/four-opencode-plugin-lib).
 
-## Bus Channel Convention
+## Bus Architecture
 
-Use session-scoped channels for per-session communication:
+**Port:** Fixed port `4099` — no port discovery, no `port.json`.
+
+**Transport:** Unix-domain socket for local same-process; TCP `localhost:4099` for cross-process (requires `four-local-bus` binary).
+
+```
+~/.local/bin/four-local-bus   # Go binary (statically linked)
+```
+
+**Channel convention:** Session-scoped channels for per-session communication:
 
 ```
 {plugin}/{sessionID}
