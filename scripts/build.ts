@@ -1,4 +1,9 @@
 import { build } from "bun";
+import { rmSync } from "node:fs";
+import solidPlugin from "@opentui/solid/bun-plugin";
+
+// Clear stale artifacts (e.g. old untranspiled .jsx copies) before rebuilding
+rmSync("dist", { recursive: true, force: true });
 
 const result = await build({
   entrypoints: ["src/index.ts"],
@@ -27,6 +32,22 @@ const tuiResult = await build({
 });
 if (!tuiResult.success) {
   console.error("TUI build failed:", tuiResult.logs);
+  process.exit(1);
+}
+
+// Build TUI components with the Solid transform so they ship transpiled JS
+const componentsResult = await build({
+  entrypoints: ["src/tui-components/index.ts"],
+  outdir: "dist/tui-components",
+  target: "bun",
+  format: "esm",
+  minify: true,
+  sourcemap: "external",
+  external: ["solid-js", "@opentui/solid"],
+  plugins: [solidPlugin],
+});
+if (!componentsResult.success) {
+  console.error("TUI components build failed:", componentsResult.logs);
   process.exit(1);
 }
 
