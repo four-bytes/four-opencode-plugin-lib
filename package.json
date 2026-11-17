@@ -16,6 +16,7 @@
   ],
   "devDependencies": {
     "@opencode-ai/plugin": "^1.16.0",
+    "@opentui/core": "0.4.1",
     "@opentui/solid": "0.4.5",
     "bun-types": "^1.3.0",
     "solid-js": "^1.9.13",
@@ -23,10 +24,12 @@
   },
   "peerDependencies": {
     "@opencode-ai/plugin": ">=1.16.0",
+    "@opentui/core": "^0.4.1",
     "@opentui/solid": "^0.4.5",
     "solid-js": "^1.9.13"
   },
   "peerDependenciesMeta": {
+    "@opentui/core": { "optional": true },
     "@opentui/solid": { "optional": true },
     "solid-js": { "optional": true }
   },
