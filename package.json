@@ -26,6 +26,10 @@
     "@opentui/solid": "^0.4.5",
     "solid-js": "^1.9.13"
   },
+  "peerDependenciesMeta": {
+    "@opentui/solid": { "optional": true },
+    "solid-js": { "optional": true }
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -35,10 +39,7 @@
       "import": "./dist/tui.js",
       "types": "./dist/tui.d.ts"
     },
-    "./tui-components": {
-      "import": "./dist/tui-components/index.js",
-      "types": "./dist/tui-components/index.d.ts"
-    }
+    "./tui-components": "./src/tui-components/index.ts"
   },
   "files": [
     "dist/",

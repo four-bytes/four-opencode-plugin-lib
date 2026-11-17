@@ -1,6 +1,5 @@
 import { build } from "bun";
 import { rmSync } from "node:fs";
-import solidPlugin from "@opentui/solid/bun-plugin";
 
 // Clear stale artifacts (e.g. old untranspiled .jsx copies) before rebuilding
 rmSync("dist", { recursive: true, force: true });
@@ -33,20 +32,8 @@ if (!tuiResult.success) {
   process.exit(1);
 }
 
-// Build TUI components with the Solid transform so they ship transpiled JS
-const componentsResult = await build({
-  entrypoints: ["src/tui-components/index.ts"],
-  outdir: "dist/tui-components",
-  target: "bun",
-  format: "esm",
-  minify: true,
-  external: ["solid-js", "@opentui/solid"],
-  plugins: [solidPlugin],
-});
-if (!componentsResult.success) {
-  console.error("TUI components build failed:", componentsResult.logs);
-  process.exit(1);
-}
+// TUI components now ship as raw .ts with `opentui:runtime-module:*` virtual-id
+// imports (no JSX, no build step) — see src/virtual-modules.d.ts and tui.ts.
 
 // Generate declarations with tsc
 const { spawnSync } = await import("child_process");
