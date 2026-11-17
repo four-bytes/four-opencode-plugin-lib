@@ -24,7 +24,8 @@ const tuiResult = await build({
   outdir: "dist",
   target: "bun",
   format: "esm",
-  minify: true,
+  // No minify: opencode rewrites `from "solid-js"` imports by regex on the
+  // built output, and minified `from"solid-js"` (no space) does not match.
   external: ["solid-js", "@opentui/solid"],
 });
 if (!tuiResult.success) {
