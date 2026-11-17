@@ -11,7 +11,6 @@ const result = await build({
   target: "bun",
   format: "esm",
   minify: true,
-  sourcemap: "external",
   external: ["@opencode-ai/plugin"],
 });
 
@@ -27,7 +26,6 @@ const tuiResult = await build({
   target: "bun",
   format: "esm",
   minify: true,
-  sourcemap: "external",
   external: ["solid-js", "@opentui/solid"],
 });
 if (!tuiResult.success) {
@@ -42,7 +40,6 @@ const componentsResult = await build({
   target: "bun",
   format: "esm",
   minify: true,
-  sourcemap: "external",
   external: ["solid-js", "@opentui/solid"],
   plugins: [solidPlugin],
 });
